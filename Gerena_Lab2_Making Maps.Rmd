@@ -1,0 +1,119 @@
+---
+title: "Spatial Ecology Lab 2: Making Maps"
+output: html_notebook
+---
+Lab 2: Making Maps; Kevin Gerena
+
+```{r}
+#read location csv, load packages, convert raw data into spatial sf object
+siteData = read.csv(file.choose())
+require(tidyverse)
+require(sf)
+require(tigris)
+require(geodata)
+require(terra)
+require(colorspace)
+require(tidyterra)
+require(ggnewscale)
+require(cowplot)
+
+siteSf = st_as_sf(siteData, coords=c('easting', 'northing'), crs='+proj=utm +zone=16 +datum=NAD83 +units=m +no_defs +type=crs')
+
+plot(st_geometry(siteSf))
+
+#add map extent boundary
+studyArea = st_bbox(siteSf)
+studyArea
+
+studyArea = studyArea + c(-200, -200, 200, 200)
+studyArea
+
+studyArea = st_as_sfc(studyArea)
+
+plot(studyArea)
+```
+```{r}
+#add boundary file for state of Alabama
+alabama = states() %>% 
+  filter(NAME=='Alabama')
+
+plot(st_geometry(alabama))
+
+st_crs(alabama)$proj4string
+
+alabama = st_transform(alabama, st_crs(siteSf))
+```
+
+```{r}
+#plot study area in state map
+plot(st_geometry(alabama))
+plot(studyArea, col='red', add=T)
+plot(st_geometry(siteSf), add=T)
+studyArea = st_transform(studyArea, st_crs(alabama))
+```
+
+```{r}
+#add elevation data, crop to study area, and plot
+usaElev = elevation_30s(country='USA', path=tempdir())
+alabama = st_transform(alabama, st_crs(usaElev))
+alabamaElev = crop(usaElev, alabama)
+studyArea = st_transform(studyArea, st_crs(alabama))
+studyAreaElevation = crop(alabamaElev, studyArea)
+plot(studyAreaElevation, col=sequential_hcl(13, "Terrain"))
+plot(alabamaElev)
+plot(st_geometry(alabama), add=T)
+studyAreaElevation = project(studyAreaElevation, crs(siteSf, proj=T))
+alabama = st_transform(alabama, crs(siteSf, proj=T))
+```
+
+```{r}
+#plot zoomed out map
+zoomedOut = ggplot()+
+  geom_sf(data = alabama)+
+  geom_sf(data = studyArea, fill=NA, color='red')
+
+zoomedOut
+
+zoomedOut = zoomedOut +
+  theme_bw()+ #Gets rid of most of the colors
+  theme(panel.grid=element_blank(), #Removes the gridlines
+        axis.text=element_blank(), #Removes the axis text
+        axis.ticks=element_blank(), #Removes the axis tick marks
+        panel.border=element_blank()) #Removes the frame around the graph
+
+zoomedOut
+```
+
+```{r}
+#plot zoomed in map
+zoomedIn = ggplot()+
+  geom_spatraster(data = studyAreaElevation)+
+  scale_fill_gradient(low='white', high='black', na.value='#99CCFF', labs(fill='Elevation'))
+
+zoomedIn
+zoomedIn = zoomedIn+
+  new_scale_fill()+
+  theme_bw()+
+  theme(panel.grid=element_blank(),
+        axis.text.x=element_text(angle=90, vjust=0.5, size=6))
+
+zoomedIn
+  zoomedIn = zoomedIn +
+  geom_sf(data = siteSf, color='orange')+
+  scale_shape_manual(values=19, name='Deer locations')
+
+zoomedIn
+```
+
+```{r}
+#combine maps, add legend, and finalize map
+plot_grid(zoomedOut, zoomedIn)
+legend = get_legend(zoomedIn)
+ggdraw(legend)
+supportingFig = plot_grid(zoomedOut, ggdraw(legend), ncol=1, rel_heights = c(0.5, 1))
+supportingFig
+plot_grid(zoomedIn, supportingFig, rel_widths=c(1, 0.5))
+ggsave2('finalMap.jpg', plot=plot_grid(zoomedIn, supportingFig, rel_widths=c(1, 1)), width=5, height=4, units='in', dpi=300)
+```
+In this lab we evaluated the relationship between individual deer locations and elevation in Alabama. We are primarily interested in how distribute themselves across the landscape and habitat characteristics like elevation may play a role in deer resource selection. Location data was gathered at Camp Hill, AL using an unmanned aerial system to detect deer. Alabama state map gathered using the tigris package and elevation data downloaded using the usaElev function.
+
