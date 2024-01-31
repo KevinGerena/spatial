@@ -1,0 +1,221 @@
+---
+title: "Kevin Gerena: Lab 3 Assignment - Scale"
+output: html_notebook
+---
+
+
+## Challenge 1 (4 points)
+
+**Build a raster with 100 rows and 100 columns. Fill the raster cells with values of a random variable drawn from a distribution of your choosing (Poisson, Normal, Uniform, etc.). Calculate the mean and variance of the values in that raster. Now increase the grain size of those cells by factors of 2, 5, and 10, combining cell values using a mean function. At each iteration, calculate the mean and variance of the values in the resulting raster. Generate 2 scatterplots that have grain size on the x-axis. Plot the mean raster value on the y-axis of the first, and variance on the y-axis of the second. What do you notice about how these values change as you "scale up" the grain size? Why do you think this pattern occurs?**
+
+Place your code in the code chunk below so I can reproduce your analyses/figures.
+
+```{r}
+require(tidyverse)
+require(sf)
+require(AICcmodavg)
+require(tigris)
+require(FedData)
+require(terra)
+require(tidyterra)
+require(ggplot2)
+raster100<-rast(ncol=100,nrow=100,xmin=1,xmax=100,ymin=1,ymax=100)
+raster100[]=rpois(ncell(raster100),lambda=2)
+plot(raster100)
+m1<-mean(as.matrix(raster100))
+m1
+v1<-var(as.matrix(raster100))
+mean2<-aggregate(raster100,fact=2,fun='mean')
+m2<-mean(as.matrix(mean2))
+v2<-var(as.matrix(mean2))
+mean5<-aggregate(raster100,fact=5,fun='mean')
+m5<-mean(as.matrix(mean5))
+m5
+v5<-var(as.matrix(mean5))
+mean10<-aggregate(raster100,fact=10,fun='mean')
+m10<-mean(as.matrix(mean10))
+v10<-var(as.matrix(mean10))
+plot(mean2)
+plot(mean5)
+plot(mean10)
+means<-c(m1,m2,m5,m10)
+variances<-c(v1,v2,v5,v10)
+grain<-as.factor(c(1,2,5,10))
+data1<-data.frame(means,variances,grain)
+data1
+ggmean<-ggplot(data1,aes(x=grain,y=means))+geom_point()
+ggvar<-ggplot(data1,aes(x=grain,y=variances))+geom_point()
+ggmean
+ggvar
+```
+
+Answer Challenge 1 with your written text here.
+While the mean remains the same across grain sizes, the variance decreases. This pattern likely occurs because the composition of each grain becomes more homogenized as grain size increases.
+
+## Challenge 2 (4 points)
+
+**Identify a situation in which you might use a summary function other than the mean to calculate new cell values when you scale up the grain of a raster (e.g., median, mode, minimum, maximum, etc.). Repeat the effort from Challenge 1 using this alternate function. Again, create two scatterplots showing how the mean and variance values of the raster change as you scale up the cell size by factors of 2, 5, and 10. Do you see a similar pattern? Compare and contrast your findings with those from Challenge 1.**
+
+*Hint: You should be able to recycle your code from Challenge 1 with only a couple of small tweaks to answer this question.*
+
+Place your code in the code chunk below so I can reproduce your analyses/figures.
+
+```{r}
+mode2<-aggregate(raster100,fact=2,fun='modal')
+m22<-mean(as.matrix(mean2))
+v22<-var(as.matrix(mean2))
+mode5<-aggregate(raster100,fact=5,fun='modal')
+m52<-mean(as.matrix(mean5))
+v52<-var(as.matrix(mean5))
+mode102<-aggregate(raster100,fact=10,fun='modal')
+m102<-mean(as.matrix(mean10))
+v102<-var(as.matrix(mean10))
+mean2<-c(m1,m22,m52,m102)
+variances2<-c(v1,v22,v52,v102)
+data2<-data.frame(mean2,variances2,grain)
+data2
+ggmean2<-ggplot(data2,aes(x=grain,y=mean2))+geom_point()
+ggvar2<-ggplot(data2,aes(x=grain,y=variances2))+geom_point()
+ggmean2
+ggvar2
+```
+
+Answer Challenge 2 with your written text here.
+One scenario for using the mode would be if you wanted to determine which habitat type or landscape feature occurred the most often in a given area.The means remain the same like in the previous example but the variances differ slightly. The variances follow generally the same decreasing pattern but have zero variance at grain size 2 and near zero at grain size 10 while grain size 5 has a greater degree of variance.
+
+## Challenge 3 (2 points)
+
+**Recall that before we calculated forest cover, we cropped our NLCD raster to minimize its size and the computing effort necessary from our poor little computers. How might that affect our ability to evaluate the scale at which five-lined skinks respond to forest cover? Why?**
+
+Place your answers here.
+Cropping the raster reduces the scales available to us and may cut off habitat in a way that isn't representative of the greater area. For example, we may crop it at an area that only includes forest cover thereby neglecting the possibility of surrounding edge habitat that could influence skink distribution and response to forest cover.
+
+## Challenge 4 (4 points)
+
+**In the lab, we measured forest cover at 1 km and 5 km. Extract forest cover proportions around each sample point for 100 m, 500 m, 1 km, 2 km, 3 km, 4 km, and 5 km scales. Examine the correlation between these 7 variables (remember the chart.Correlation() function). What patterns do you notice in correlation among these variables?**
+
+*Hint: Recall the for loop we used to calculate this variable at two scales... could you make a small addition here to look at more scales?*
+
+```{r}
+sites = st_read("/vsicurl/https://github.com/ValenteJJ/SpatialEcology/raw/main/Week3/reptiledata.shp") %>% 
+  filter(management!='Corn')
+st_crs(sites) = "+proj=aea +lat_0=23 +lon_0=-96 +lat_1=29.5 +lat_2=45.5 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs"
+states = states() %>% 
+  filter(NAME %in% c('Alabama', 'Florida', 'Georgia')) %>% 
+  st_transform(crs(sites, proj=T))
+ggplot()+
+  geom_sf(data = states)+
+  geom_sf(data = sites)
+
+presAbs = read.csv('https://raw.githubusercontent.com/ValenteJJ/SpatialEcology/main/Week3/reptiles_flsk.csv')
+sites = sites %>% 
+  left_join(presAbs, by='site')
+studyArea = st_bbox(sites) + c(-10000, -10000, 10000, 10000)
+studyArea = st_as_sfc(studyArea)
+
+ggplot()+
+  geom_sf(data = states)+
+  geom_sf(data = studyArea, fill=NA, color='red')+
+  geom_sf(data = sites)
+
+nlcd = get_nlcd(studyArea,
+                label='studyArea',
+                year = 2016,
+                dataset = 'landcover',
+                landmass = 'L48'
+)
+plot(nlcd, 1, legend=T, plg=list(cex=0.5))
+plot(st_geometry(sites), add=T, pch=16)
+forest = nlcd %>% 
+  setValues(0)
+
+forest[nlcd=='Deciduous Forest' | nlcd=='Evergreen Forest' | nlcd=='Mixed Forest'] = 1
+plot(forest)
+plot(st_geometry(sites), add=T, pch=16, col='black')
+
+buffSite5km = st_buffer(sites[1,], dist=5000)
+buffSite1km = st_buffer(sites[1,], dist=1000)
+buffSite100m = st_buffer(sites[1,], dist=100)
+buffSite500m= st_buffer(sites[1,], dist=500)
+buffSite2km = st_buffer(sites[1,], dist=2000)
+buffSite3km = st_buffer(sites[1,], dist=3000)
+buffSite4km = st_buffer(sites[1,], dist=4000)
+buffFor1km = crop(forest, buffSite1km, mask=T)
+buffFor100m = crop(forest, buffSite100m, mask=T)
+buffFor500m = crop(forest, buffSite500m, mask=T)
+buffFor2km = crop(forest, buffSite2km, mask=T)
+buffFor3km=crop(forest, buffSite3km, mask=T)
+buffFor4km=crop(forest, buffSite4km, mask=T)
+buffFor5km=crop(forest, buffSite5km, mask=T)
+bufferCover = function(shp, size, landcover){
+  buffArea = (pi*size^2)/10000
+  grainArea = (prod(res(landcover)))/10000
+  
+  buffi = st_buffer(shp[i,], dist=size)
+  cropi = crop(landcover, buffi, mask=T)
+  numCells = global(cropi, 'sum', na.rm=T)
+  forestHa = numCells * grainArea
+  propForest = forestHa / buffArea
+  
+  return(propForest)
+}
+
+for1km = as.vector(rep(NA, nrow(sites)))
+for5km = as.vector(rep(NA, nrow(sites)))
+for2km = as.vector(rep(NA, nrow(sites)))
+for3km = as.vector(rep(NA, nrow(sites)))
+for4km = as.vector(rep(NA, nrow(sites)))
+for100m= as.vector(rep(NA, nrow(sites)))
+for500m= as.vector(rep(NA, nrow(sites)))
+
+for(i in 1:nrow(sites)){
+  for1km[i] = bufferCover(sites, 1000, forest)
+  for5km[i] = bufferCover(sites, 5000, forest)
+ for2km[i] = bufferCover(sites, 2000, forest)
+  for3km[i] = bufferCover(sites, 3000, forest)
+ for4km[i] = bufferCover(sites, 4000, forest)
+ for500m[i] = bufferCover(sites, 500, forest)
+ for100m[i] = bufferCover(sites, 100, forest)
+}
+
+forestData = sites %>% 
+  mutate(for1km = unlist(for1km),
+         for5km = unlist(for5km),
+        for2km = unlist(for2km),
+         for3km = unlist(for3km),
+         for4km = unlist(for4km),
+        for500m = unlist(for500m),
+        for100m = unlist(for100m))
+forestData %>% 
+  as.data.frame() %>% 
+  select(coords_x1, for1km, for5km, for2km, for3km, for4km, for500m, for100m) %>% 
+  PerformanceAnalytics::chart.Correlation(histogram=F)
+forestData
+```
+The majority of the scales evaluated are highly correlated with one another but we do see a pattern of reduced correlation as the magnitude of difference between scales increases. For example, 100m and 5km do not appear to be correlated with one another while 5km and 4km are highly correlated. As such, scales that are closer in size appear to be more highly correlated in this site.
+
+## Challenge 5 (4 points)
+
+**Fit 8 logistic regression models (a null model and one for each of the 7 forest scales). Compare these models using AICc. Which scale do you think represents the critical or characteristic scale at which forest cover affects skink presence? Is this scale clearly better than the others, or is there some ambiguity? What are some mechanisms by which forest cover could affect skink presence at this scale? What is your overall conclusion regarding how forest cover affects skink presence (i.e., take a look at the betas)?**
+
+Place your R code in the chunk below.
+```{r}
+modelNull = glm(pres~1, family='binomial', data=forestData)
+model1km = glm(pres~for1km, family='binomial', data=forestData)
+model5km = glm(pres~for5km, family='binomial', data=forestData)
+model2km = glm(pres~for2km, family='binomial', data=forestData)
+model3km = glm(pres~for3km, family='binomial', data=forestData)
+model100m = glm(pres~for100m, family='binomial', data=forestData)
+model4km = glm(pres~for4km, family='binomial', data=forestData)
+model500m = glm(pres~for500m, family='binomial', data=forestData)
+aictab(list(modelNull, model100m, model500m, model1km, model2km, model3km, model4km, model5km), modnames=c('Null', '100m', '500m', '1 km', '2km', '3km', '4km', '5 km'))
+```
+
+Place your answer to the questions here.
+The model with the lowest AIC was 2km. There was some ambiguity between the 2km and 4km scales. Forest cover could affect skinks at this scale by affecting the composition of plants and abiotic factors as well as overall community composition.
+## Challenge 6 (2 points)
+
+**If you encounter ambiguity in identifying the characteristic scale of an effect, can you come up with a clever way to condense the information in the multi-scale variables into just one or two? When might it be ok to include two covariates in the same model (think multiple regression) that represent the same ecological feature measured at different scales (e.g., forest cover at 1 km AND forest cover at 5 km in the same model)? I can think of both a biological and a statistical answer to this question.**
+
+Place your answer to the questions here.
+It may be ok to include two covariates that represent the same ecological feature at different scales if there are different scales of effect that both contribute to the measured response such as an animal selecting for habitat that has dense forest cover at the 1km scale but also has edge habitat at the 5km scale. This can be achieved by adding multiple covariates to our generalized linear model so long as they do not violate our assumptions for the generalized linear model.
