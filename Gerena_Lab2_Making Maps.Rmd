@@ -6,7 +6,7 @@ Lab 2: Making Maps; Kevin Gerena
 
 ```{r}
 #read location csv, load packages, convert raw data into spatial sf object
-siteData = read.csv(file.choose())
+siteData = read.csv('https://github.com/KevinGerena/spatial/raw/main/location.csv')
 require(tidyverse)
 require(sf)
 require(tigris)
@@ -32,6 +32,7 @@ studyArea = st_as_sfc(studyArea)
 
 plot(studyArea)
 ```
+
 ```{r}
 #add boundary file for state of Alabama
 alabama = states() %>% 
@@ -117,3 +118,8 @@ ggsave2('finalMap.jpg', plot=plot_grid(zoomedIn, supportingFig, rel_widths=c(1, 
 ```
 In this lab we evaluated the relationship between individual deer locations and elevation in Alabama. We are primarily interested in how distribute themselves across the landscape and habitat characteristics like elevation may play a role in deer resource selection. Location data was gathered at Camp Hill, AL using an unmanned aerial system to detect deer. Alabama state map gathered using the tigris package and elevation data downloaded using the usaElev function.
 
+
+
+# Grade
+
+$\color{red}{\text{Nice work, Kevin. You lost 3 points here: -1 because it wasn't reproducible (I had to insert a file name on line 9); -1 because elevation isn't showing up on your final zoomed in map; and -1 for neatness because the same elevation legend shows up twice in your final product and there is no information about what the orange dots represent.}}$
