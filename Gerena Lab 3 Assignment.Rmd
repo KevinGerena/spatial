@@ -52,6 +52,9 @@ ggvar
 Answer Challenge 1 with your written text here.
 While the mean remains the same across grain sizes, the variance decreases. This pattern likely occurs because the composition of each grain becomes more homogenized as grain size increases.
 
+$\color{red}{\text{And why does the mean stay the same? +3.5}}$
+
+
 ## Challenge 2 (4 points)
 
 **Identify a situation in which you might use a summary function other than the mean to calculate new cell values when you scale up the grain of a raster (e.g., median, mode, minimum, maximum, etc.). Repeat the effort from Challenge 1 using this alternate function. Again, create two scatterplots showing how the mean and variance values of the raster change as you scale up the cell size by factors of 2, 5, and 10. Do you see a similar pattern? Compare and contrast your findings with those from Challenge 1.**
@@ -83,12 +86,16 @@ ggvar2
 Answer Challenge 2 with your written text here.
 One scenario for using the mode would be if you wanted to determine which habitat type or landscape feature occurred the most often in a given area.The means remain the same like in the previous example but the variances differ slightly. The variances follow generally the same decreasing pattern but have zero variance at grain size 2 and near zero at grain size 10 while grain size 5 has a greater degree of variance.
 
+$\color{red}{\text{Interesting one. You've basically created a situation where every value is converging towards the number 2. +4}}$
+
 ## Challenge 3 (2 points)
 
 **Recall that before we calculated forest cover, we cropped our NLCD raster to minimize its size and the computing effort necessary from our poor little computers. How might that affect our ability to evaluate the scale at which five-lined skinks respond to forest cover? Why?**
 
 Place your answers here.
 Cropping the raster reduces the scales available to us and may cut off habitat in a way that isn't representative of the greater area. For example, we may crop it at an area that only includes forest cover thereby neglecting the possibility of surrounding edge habitat that could influence skink distribution and response to forest cover.
+
+$\color{red}{\text{Mostly right. What I was looking for is that we simply can't accurately explore scales greater than 10 km when we crop at 10 km because our buffers around our points will start creeping into areas for which we don't have data. +1.5}}$
 
 ## Challenge 4 (4 points)
 
@@ -194,6 +201,8 @@ forestData
 ```
 The majority of the scales evaluated are highly correlated with one another but we do see a pattern of reduced correlation as the magnitude of difference between scales increases. For example, 100m and 5km do not appear to be correlated with one another while 5km and 4km are highly correlated. As such, scales that are closer in size appear to be more highly correlated in this site.
 
+$\color{red}{\text{Nice. +4}}$
+
 ## Challenge 5 (4 points)
 
 **Fit 8 logistic regression models (a null model and one for each of the 7 forest scales). Compare these models using AICc. Which scale do you think represents the critical or characteristic scale at which forest cover affects skink presence? Is this scale clearly better than the others, or is there some ambiguity? What are some mechanisms by which forest cover could affect skink presence at this scale? What is your overall conclusion regarding how forest cover affects skink presence (i.e., take a look at the betas)?**
@@ -213,9 +222,14 @@ aictab(list(modelNull, model100m, model500m, model1km, model2km, model3km, model
 
 Place your answer to the questions here.
 The model with the lowest AIC was 2km. There was some ambiguity between the 2km and 4km scales. Forest cover could affect skinks at this scale by affecting the composition of plants and abiotic factors as well as overall community composition.
+
+$\color{red}{\text{Agreed. And the overall general conclusion (after looking at the betas) should be that forest cover has a positive influence on skink presence. +3}}$
+
 ## Challenge 6 (2 points)
 
 **If you encounter ambiguity in identifying the characteristic scale of an effect, can you come up with a clever way to condense the information in the multi-scale variables into just one or two? When might it be ok to include two covariates in the same model (think multiple regression) that represent the same ecological feature measured at different scales (e.g., forest cover at 1 km AND forest cover at 5 km in the same model)? I can think of both a biological and a statistical answer to this question.**
 
 Place your answer to the questions here.
 It may be ok to include two covariates that represent the same ecological feature at different scales if there are different scales of effect that both contribute to the measured response such as an animal selecting for habitat that has dense forest cover at the 1km scale but also has edge habitat at the 5km scale. This can be achieved by adding multiple covariates to our generalized linear model so long as they do not violate our assumptions for the generalized linear model.
+
+$\color{red}{\text{Specifically they shouldn't be highly correlated with one another. +2}}$
