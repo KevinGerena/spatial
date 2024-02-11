@@ -69,14 +69,21 @@ patchFrac
 patchGyrate
 patchNcore
 patchShape
-pdata=data.frame(lsm_p_area = patchArea,lsm_p_core=patchCore,lsm_p_enn=patchEnn,lsm_p_perim=patchPerim,lsm_p_para=patchPara,lsm_p_cai=patchCai,lsm_p_circle=patchCircle,lsm_p_contig=patchContig,lsm_p_frac=patchFrac,lsm_p_gyrate=patchGyrate,lsm_p_ncore=patchNcore,lsm_p_shape=patchShape)
-pdata <- sapply(pdata, as.numeric, na.rm = TRUE)
-any(is.na(pdata) | !is.finite(pdata))
-pdata[is.na(pdata) | !is.finite(pdata)] <- 0
+# pdata=data.frame(lsm_p_area = patchArea,lsm_p_core=patchCore,lsm_p_enn=patchEnn,lsm_p_perim=patchPerim,lsm_p_para=patchPara,lsm_p_cai=patchCai,lsm_p_circle=patchCircle,lsm_p_contig=patchContig,lsm_p_frac=patchFrac,lsm_p_gyrate=patchGyrate,lsm_p_ncore=patchNcore,lsm_p_shape=patchShape)
+
+pdata = rbind(patchArea, patchCore, patchEnn, patchPerim, patchPara, patchCai, patchCircle, patchContig, patchFrac, patchGyrate, patchNcore, patchShape) %>% 
+  pivot_wider(names_from=metric, values_from=value) %>% 
+  select(area:shape)
+
+# pdata <- sapply(pdata, as.numeric, na.rm = TRUE)
+# any(is.na(pdata) | !is.finite(pdata))
+# pdata[is.na(pdata) | !is.finite(pdata)] <- 0
 chart.Correlation(pdata)
 ```
 
 There appears to be a substantial amount of redundancy among the patch-level metrics.
+
+$\color{red}{\text{Somehow you ended up with too many variables in your plot, so I tweaked your code to show you how it should look. +2.5}}$
 
 
 ## Challenge 2 (4 points)
@@ -111,6 +118,9 @@ lsm_c_te(nlcdSimple, directions=4) %>%
 Answer Challenge 2 with your written text here.
 
 Using the queen rule to delineate patches generally resulted in patches with greater areas, standard deviations, and nearest-neighbor distances, but a reduced number of total patches compared to the rook rule. However, total edge length was the same across all categories and all metrics were the same between both rules in wetland areas. When researchers desire a greater number of smaller patches to analyze they should use the rook rule while researchers seeking a smaller amount of large patches at a coarser scale should use the queen rule. For example, researchers analyzing microhabitat may select the rook rule while studies investigating the same site at a landscapes scale could opt for the queen rule.
+
+$\color{red}{\text{Good. I'd also argue that one should be considering the biology of their study organism when considering how to define a patch. +4}}$
+
 
 ## Challenge 3 (4 points)
 
@@ -187,6 +197,7 @@ lsm_l_shei(nlcdSimple19)
 
 The values of the landscape's Shannon diversity and Shannon evenness indices increased between 2001 and 2019. This reflects the change in the landscape from a disproportionate amount of forest cover to a more even and diverse landscape containing a variety of fragmented landcover patches.
 
+$\color{red}{\text{Awesome! +4}}$
 
 
 ## Challenge 4 (4 points)
@@ -296,6 +307,9 @@ plot_division <- ggplot(thresh, aes(x = threshold, y = division)) +
 plot_division
 ```
 I chose the landscape-scale metrics of mean area, number of patches, and landscape division index to evaluate these simulations. The mean area metric allows us to readily see how the size of that land cover type increases as percent cover increases and it dominates the landscape. The number of patches allows us to see how the habitat initially becomes more fragmented as the percent cover of one land cover type increases until it is evenly matched with that of the alternate land cover before the number of patches decreases as the landscape becomes homogenized once again. The landscape division index allows us to further evaluate habitat fragmentation and we can see that in this landscape with two cover types it follows a normal curve as the landscape becomes more divided at 50/50 and less divided as either land cover type dominates the landscape.
+
+$\color{red}{\text{Nice. +4}}$
+
 
 ## Challenge 5 (4 points)
 
@@ -434,4 +448,6 @@ plot_pd
 I used the landscape-scale metrics of the Shannon diversity and Shannon evenness indices as well as the class-scale metric of patch diversity to evaluate whether the landscape was becoming more diverse or more even or if it remained the same while the patch density and distribution changed. As such, I also evaluated patch density.
 
 As suspected, the diversity and evenness of the landscape remained the same while patch density of the alternate land cover decreased and patch density of the evaluated land cover type increased. As such, patches did become more aggregated as the value of H increased but the actual diversity and evenness of the overall landscape remained the same.
+
+$\color{red}{\text{Good work, Kevin. +4}}$
 
