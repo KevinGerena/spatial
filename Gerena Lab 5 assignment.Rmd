@@ -26,6 +26,8 @@ summary(sim)
 
 122 organisms in this simulation. 100 organisms are expected from the product of a window area of 10,000 and a Poisson lambda of 0.01.
 
+$\color{red}{\text{Correct. +3}}$
+
 # Challenge 2 (3 points)
 
 Verify that there no linear or quadratic pattern in the distribution of your organisms using fitted Poisson process models. Show the outcome of this analysis and explain your conclusion.
@@ -38,6 +40,9 @@ data.frame(model = c('int', 'xy', 'xy2'),
            AIC = c(AIC(Int), AIC(Xy), AIC(Xy2)))
 ```
 The model with the lowest AIC score and most support was the one that assumed a homogeneous point process rather than a linear or quadratic pattern.
+
+$\color{red}{\text{Haha, you stumbled on a wonky one where the linear model actually has the most support, but that wasn't supposed to happen. You got the gist of it. +3}}$
+
 
 # Challenge 3 (14 points)
 
@@ -74,23 +79,23 @@ c3 = ppp(x=critters$x, y=critters$y, window = cWindow, marks = factor(critters$o
 plot(c3)
 summary(c3)
 
-MultiCritter2 = envelope(c3, Lcross, nsim = 99, rank = 1, i = 'critter2', j = 'critter1', simulate = expression(rlabel(pppc)))
+MultiCritter2 = envelope(c3, Lcross, nsim = 99, rank = 1, i = 'critter2', j = 'critter1', simulate = expression(rlabel(c3)))
 plot(MultiCritter2, . - r ~ r, legend = FALSE)
 
-MultiCritter1 = envelope(c3, Lcross, nsim = 99, rank = 1, i = 'critter1', j = 'critter2', simulate = expression(rlabel(pppc)))
+MultiCritter1 = envelope(c3, Lcross, nsim = 99, rank = 1, i = 'critter1', j = 'critter2', simulate = expression(rlabel(c3)))
 plot(MultiCritter1, . - r ~ r, legend = FALSE)
 
 mc=markcorr(c3)
 plot(mc)
 
 pTrans1 = pcf(c1, correction='translate')
-plot(pTrans)
+plot(pTrans1)
 pEnv1 = envelope(c1, pcf, nsim=99, rank=1, correction='translate', global=F)
-plot(pEnv, shade=c('hi', 'lo'), legend=F)
+plot(pEnv1, shade=c('hi', 'lo'), legend=F)
 pTrans2 = pcf(c2, correction='translate')
-plot(pTrans)
+plot(pTrans2)
 pEnv2 = envelope(c2, pcf, nsim=99, rank=1, correction='translate', global=F)
-plot(pEnv, shade=c('hi', 'lo'), legend=F)
+plot(pEnv2, shade=c('hi', 'lo'), legend=F)
 
 gTrans1 = Gest(c1, correction='rs')
 plot(gTrans1, legend=F)
@@ -102,4 +107,17 @@ plot(gTrans2, legend=F)
 gEnv2 = envelope(c2, Gest, nsim=99, rank=1, correction='rs', global=F)
 plot(gEnv2, shade=c('hi', 'lo'), legend=F)
 ```
+
 Species 1 appears to be aggregated around r=4 according to the G function while species 2 has fewer nearest neighbors around r=3 and r=6 and G(r) is generally lower than the dotted line. Species 1 appears to more closely follow a random distribution. As such, species 2 is likely the prey species avoiding species 1 as a predator.
+
+$\color{red}{\text{Pretty good stuff, Kevin. I was really hoping you would look at the spatial aggregation of each of the species using either a chi-square test or Ripley's K/L. If you do that, you'll see that species 2 is randomly distributed (the predator) while species 1 is clumped (the prey). See my additional code below. +12}}$
+
+
+```{r}
+tmp1 = envelope(c3, Lcross, nsim = 99, rank = 1, i = 'critter1', j = 'critter1', simulate = expression(rlabel(c3)))
+plot(tmp1, . - r ~ r, legend = FALSE)
+
+tmp2 = envelope(c3, Lcross, nsim = 99, rank = 1, i = 'critter2', j = 'critter2', simulate = expression(rlabel(c3)))
+plot(tmp2, . - r ~ r, legend = FALSE)
+```
+
