@@ -104,6 +104,9 @@ rfplot=plot(rfmap)
 ```
 The GLM model appears to have reduced peak presence probability but also appears to have larger, more homogenized patches of predicted presence compared to the other models. The bioclim envelope model appears to have the greatest predicted presence but may overestimate reality. These differences are likely related to the bioclim model's lack of background points and the GLM model's inclusion of additional points that increase overall sample size and reduce probability of the species being present at a given location.
 
+$\color{red}{\text{Nice. +4}}$
+
+
 # Challenge 2 (4 points)
 
 When we fit our GLM in lab, we used background points, rather than true absence points, to represent pseudo-absences. Fit the exact same GLM model, only this time use presence and true absence data. That is, replace the background rows in the dataframe with rows that represent actual sites where surveys were completed but Varied Thrush were not detected. Once you've fit the GLM, build a new SDM from this fitted model and visually compare the prediction surface to that built based on the presence-background model. What discrepancies do you notice, and what is your intuition regarding which of these two models is more reliable?
@@ -126,6 +129,9 @@ glmMap1 = predict(layers, glmModelabs, type='response')
 glmplot2=plot(glmMap1)
 ```
 The model using true absence data shows greater probability of species presence with several areas with very high presence data spread over a larger area compared to the model using background points. I intuitively trust the model with true absence data over the background point model.
+
+$\color{red}{\text{Why do you trust this true absence model? +3.5}}$
+
 
 # Challenge 3 (4 points)
 
@@ -198,6 +204,9 @@ ggplot(tmp, aes(x=xValue, y=value, color=name))+
 ```
 Overall, we see all variable models having greater predicted presence than the background point models. This relationship is weakest in the Mesic model where the background point model and mesic model have very similar values. This relationship is greatest in the precipitation model. 
 
+$\color{red}{\text{Why does this pattern occur? +3}}$
+
+
 # Challenge 4 (4 points)
 
 Varied Thrush are considered forest-dependent, and thus one might characterize mesic forests as "habitat" for the species. Calculate the total amount of mesic forest in the study area, and the mean size of the mesic forest patches.
@@ -220,6 +229,9 @@ reclassmn=lsm_c_area_mn(reclass, directions=8)
 reclassmn
 ```
 Total habitat for the SDM approach was 277908 and for the mesic approach it was 4021700. Patch area was 17.98641 and 749.0594 for SDM and mesic approaches, respectively. A threshold of 0.25 was chosen to represent a relatively low detection probability of 25% for ease of use. The choice of approach depends on the scale of interest with the SDM method having a finer scale than the mesic approach.
+
+$\color{red}{\text{I'm not sure your "finer scale" argument holds much water. Both analyses are being conducted at the same grain and extent. The big difference is that the SDM approach is narrowing in on a finer set of habitat characteristics. +3.5}}$
+
 
 # Challenge 5 (4 points)
 
@@ -275,3 +287,5 @@ par(mfrow=c(1,1))
 plot(maxentMap3)
 ```
 Regularization involves the reduction of over-fitting in machine learning models. The regularization constant is used to calibrate the model with a lower value potentially underestimating species presence while a higher value can overestimate species presence. This is seen in the above plots with the 0.5 plot having reduced presence and the 3 plot showing substantially greater presence.
+
+$\color{red}{\text{Nice work, Kevin. +4}}$
