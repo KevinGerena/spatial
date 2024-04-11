@@ -1,0 +1,363 @@
+---
+title: "Kevin Gerena Assignment 12 - Connectivity"
+output: html_notebook
+---
+
+
+```{r}
+require(tidyverse)
+require(terra)
+require(sf)
+require(gdistance)
+require(igraph)
+require(fitdistrplus)
+require(fdrtool)
+require(sf)
+require(AICcmodavg)
+require(tidyterra)
+require(dplyr)
+require(raster)
+require(landscapemetrics)
+require(PerformanceAnalytics)
+```
+
+
+# Challenge 1 (5 points)
+
+In the lab, we calculated Euclidean distance, least-cost distance, commute distance (based on circuit theory), and a randomized shortest path distance. Examine the correlation among these 4 metrics of effective distance. Which tend to be the longest, which tend to be the shortest, and why? In what situations might you expect to find strong differences between Euclidean distance and the other metrics of effective distance?
+
+```{r}
+#import data
+# Read in the landcover raster
+land = rast('https://github.com/ValenteJJ/SpatialEcology/raw/main/Week10/panther_landcover.tif')
+
+# Bring in the public lands shapefile
+public = st_read('/vsicurl/https://github.com/ValenteJJ/SpatialEcology/raw/main/Week12/panther_publicland.shp')
+
+# Set the crs of the public lands shapefile
+st_crs(public) = crs(land)
+
+# And look at it
+data.frame(public)
+
+publicCentroids = st_centroid(public)
+
+classification = read.table('https://raw.githubusercontent.com/ValenteJJ/SpatialEcology/main/Week12/resistance%20reclass.txt', header=T)
+landCost = classify(land, classification[,c(1,3)])
+landCost = raster(landCost)
+
+#euclidean distance
+geoDist = pointDistance(publicCentroids, lonlat=F)
+geoDist = as.dist(geoDist)
+geoDist
+g1 = c(127755.36, 64612.56, 112427.46, 88783.37) #TOTACRES
+
+#least-cost distance
+landCond = transition(1/landCost, transitionFunction = mean, 8)
+landCond = geoCorrection(landCond, type='c', multpl=F)
+lcDist = costDistance(landCond, st_coordinates(publicCentroids))
+lcDist
+l1 = c(250607.85, 179140.02, 318972.02, 191449.65)
+
+#commute distance
+circuitDist = commuteDistance(landCond, st_coordinates(publicCentroids))
+circuitDist
+c1 = c(1337632.6, 1221718.7, 1675535.7, 1271736.3)
+
+#randomized shortest path distance
+rspDist1 = rSPDistance(landCond, from=st_coordinates(publicCentroids)[1,], to=st_coordinates(publicCentroids)[2,], theta=0.001)
+rspDist2 = rSPDistance(landCond, from=st_coordinates(publicCentroids)[1,], to=st_coordinates(publicCentroids)[3,], theta=0.001)
+rspDist3 = rSPDistance(landCond, from=st_coordinates(publicCentroids)[1,], to=st_coordinates(publicCentroids)[4,], theta=0.001)
+rspDist4 = rSPDistance(landCond, from=st_coordinates(publicCentroids)[1,], to=st_coordinates(publicCentroids)[5,], theta=0.001)
+r1 = rbind(rspDist1, rspDist2, rspDist3, rspDist4)
+
+#examining correlation
+Dist = data.frame(
+  Euclidean = as.vector(g1),
+  LeastCost = as.vector(l1),
+  Circuit = as.vector(c1),
+  Random = as.vector(r1))
+Dist
+chart.Correlation(Dist, histogram=T)
+```
+
+The randomized shortest distances are the longest, and the Euclidean distances are the shortest. This is expected because the Euclidean distance is a straight-line distance that does not include factors like fragmentation which may lead to underestimating the distance between locations in circumstances where factors such as that may be significant.
+
+# Challenge 2 (5 points)
+
+In the lab we developed a 10% least-cost corridor between two protected areas. Identify what proportion of this corridor is comprised of each landcover type based on the land raster. To do this, make sure that both the land and leastCostCorridor10 rasters are spatRasters. Then mask land with leastCostCorridor10. The values in the resulting raster will be representative of the landcover values in the corridor. Summarise this information and refer back to the classification dataframe to link the landcover numbers with landcover types. What are the three most common landcover types within this corridor, and does this make sense given what you know about the resistance to movement within such landcover types?
+
+```{r}
+#mapping least cost paths
+# Choose the extent for cropping
+fpwrOssfExtent = extent(642000, 683000, 237000, 298000)
+
+# Crop the landcover layer
+landSub = crop(land, fpwrOssfExtent)
+
+# Crop the cost layer and create a transition matrix
+landCostSub = crop(landCost, fpwrOssfExtent)
+landCondSub = transition(1/landCostSub, transitionFunction=mean, 8)
+landCondSub = geoCorrection(landCondSub, type='c', multpl=F)
+
+fpwrCost = accCost(landCondSub, st_coordinates(publicCentroids)[5,])
+ossfCost = accCost(landCondSub, st_coordinates(publicCentroids)[3,])
+plot(fpwrCost)
+plot(ossfCost)
+
+fpwrOssfLcp = shortestPath(landCond, st_coordinates(publicCentroids)[5,], st_coordinates(publicCentroids[3,]), output='SpatialLines')
+
+plot(landCostSub, axes=F)
+plot(st_geometry(public), add=T)
+plot(st_geometry(publicCentroids), col='grey30', add=T)
+lines(fpwrOssfLcp, col='red', lwd=3)
+
+leastCostCorridor = overlay(fpwrCost, ossfCost, fun=function(x, y){return(x+y)})
+plot(leastCostCorridor)
+
+quant10 = quantile(leastCostCorridor, probs=0.1, na.rm=T)
+quant10
+leastCost10 = leastCostCorridor
+values(leastCost10) = NA
+leastCost10[leastCostCorridor < quant10] = 1
+leastCost10 = rast(leastCost10)
+
+plot(leastCost10, legend=F, axes=F)
+points(publicCentroids, col='grey30')
+lines(fpwrOssfLcp, col='red')
+
+landMask = crop(land, leastCost10)
+landMask = mask(landMask, leastCost10)
+plot(landMask)
+
+landMask = categories(landMask, value = classification[,c(1,3)])
+landProp = lsm_c_pland(landMask, directions = 8)
+landProp
+classification
+```
+
+The three most common cover types are cypress swamp (22), cropland (14.3), and fresh water marsh (13.7). Cypress swamp is related to resource selection and cropland and fresh water marsh can also provide additional resources or terrain that facilitates travel.
+
+
+# Challenge 3 (5 points)
+
+In the lab, we used the passage() function to conduct a randomized shortest path analysis mapping connectivity among two protected areas. We initially set theta to 0 thus resulting in a circuit theory based map of connectivity. Using the same passage() function, conduct the analysis again using values of theta = 0.0001 and theta = 0.001. Plot the resulting maps. What patterns do you see emerge as theta increases? Comment on the tradeoffs between biological realism and ease of conservation planning based on these three different maps of connectivity.
+
+```{r}
+#0 
+passageMapT0 = passage(landCondSub, origin = st_coordinates(publicCentroids)[3,], goal = st_coordinates(publicCentroids)[5,], theta=0)
+
+#0.0001
+passageMapT1 = passage(landCondSub, origin = st_coordinates(publicCentroids)[3,], goal = st_coordinates(publicCentroids)[5,], theta=0.0001)
+
+#0.001
+passageMapT2 = passage(landCondSub, origin = st_coordinates(publicCentroids)[3,], goal = st_coordinates(publicCentroids)[5,], theta=0.001)
+
+plot(passageMapT0)
+plot(passageMapT1)
+plot(passageMapT2)
+```
+As theta increases, the movement path becomes clearer and more readily applied to conservation. However, this comes at the cost of biological realism with lower theta values likely better reflecting reality or our lack of knowledge regarding contributing factors.
+
+
+# Challenge 4 (5 points)
+
+In the latter part of the lab, we discussed calculating patch-based and landscape-based metrics of connectivity. Patch number 6 had the lowest degree (n = 2) while patch number 7 had one of the highest degrees (n = 12). First delete patch number 6 from the network, and then examine the impacts on the landscape level metrics integral index of connectivity (ICC) and probability of connectivity (PC). Now replace patch 6 back into the network and instead delete patch number 7. Again, examine how ICC and PC change. How does the loss of patch 6 compare to the loss of patch 7 in terms of its impacts on landscape-level connectivity?
+
+```{r}
+#patch-based networks
+nodes = read.csv('https://raw.githubusercontent.com/ValenteJJ/SpatialEcology/main/Week12/kite_nodes.csv')
+area = nodes$area
+nodes
+
+aObs = read.csv('https://raw.githubusercontent.com/ValenteJJ/SpatialEcology/main/Week12/kite_movement.csv')[,-1]
+diag(aObs) = 0
+aObs
+
+coords = cbind(nodes$XCoord, nodes$YCoord)
+distMat = pointDistance(coords, lonlat=F)
+distMat = distMat / 1000 # in km
+distMat
+
+#dispersal kernels
+linkLoc = which(aObs > 0, arr.ind=T)
+withinDisp = cbind(distMat[linkLoc], aObs[linkLoc])
+
+#Creating one distance observation for each individual
+withinDisp = rep(withinDisp[,1], withinDisp[,2])
+
+#fit model
+dispExp = fitdist(data = withinDisp, distr='exp', method='mle')
+plot(dispExp)
+aObs #directed, weighted network
+
+aMeanDist = mean(withinDisp)
+aMeanDist #undirected, unweighted network based on mean dispersal distance
+
+aMean = matrix(0, nrow=nrow(aObs), ncol=ncol(aObs))
+aMean[distMat < aMeanDist] = 1
+diag(aMean) = 0
+aMean #transition matrix
+
+#exponential distribution distance matrix
+aProb = matrix(0, nrow=nrow(aObs), ncol=ncol(aObs))
+alpha = 1/aMeanDist
+aProb = exp(-alpha*distMat)
+diag(aProb)=0
+aProb
+
+#igraph objects for each matrix
+graphAmean = graph_from_adjacency_matrix(aMean, mode='undirected')
+graphAprob = graph_from_adjacency_matrix(aProb, mode='undirected', weighted=T)
+graphAobs = graph_from_adjacency_matrix(as.matrix(aObs), mode='directed', weighted=T)
+
+plot(graphAmean, layout=coords, vertex.label=NA)
+plot(graphAprob, layout=coords, edge.width=E(graphAprob)$weight, vertex.label=NA)
+plot(graphAobs, layout=coords, vertex.label=NA)
+
+```
+
+### Patch 6 Removed
+```{r}
+
+nodes6 = read.csv('https://github.com/rytomey/WILD7970_Spatial/raw/main/W12_Connectivity/kite6.csv')
+area6 = nodes6$area
+nodes6
+
+aObs6 = read.csv('https://github.com/rytomey/WILD7970_Spatial/raw/main/W12_Connectivity/kitemove6.csv')[,-1]
+diag(aObs6) = 0
+aObs6
+
+coords6 = cbind(nodes6$XCoord, nodes6$YCoord)
+distMat6 = pointDistance(coords6, lonlat=F)
+distMat6 = distMat6 / 1000 # in km
+distMat6
+
+linkLoc6 = which(aObs6 > 0, arr.ind=T)
+withinDisp6 = cbind(distMat6[linkLoc6], aObs6[linkLoc6])
+withinDisp6 = rep(withinDisp6[,1], withinDisp6[,2])
+
+dispExp6 = fitdist(data = withinDisp6, distr='exp', method='mle')
+plot(dispExp6)
+aObs6
+
+aMeanDist6 = mean(withinDisp6)
+aMeanDist6
+
+aMean6 = matrix(0, nrow=nrow(aObs6), ncol=ncol(aObs6))
+aMean6[distMat6 < aMeanDist6] = 1
+diag(aMean6) = 0
+aMean6
+
+aProb6 = matrix(0, nrow=nrow(aObs6), ncol=ncol(aObs6))
+alpha6 = 1/aMeanDist6
+
+aProb6 = exp(-alpha*distMat6)
+diag(aProb6)=0
+aProb6
+
+graphAmean6 = graph_from_adjacency_matrix(aMean6, mode='undirected')
+graphAprob6 = graph_from_adjacency_matrix(aProb6, mode='undirected', weighted=T)
+graphAobs6 = graph_from_adjacency_matrix(as.matrix(aObs6), mode='directed', weighted=T)
+
+#landscape
+connectance6 = edge_density(graphAmean6)
+connectance6
+
+#integral index of connectivity
+AL = 63990 
+nlMat6 = distances(graphAmean6)
+nlMat6 [is.infinite(nlMat6)] = 1000
+iicMat6 = outer(area6, area6)/(1+nlMat6)
+iic6 = sum(iicMat6)/AL^2
+iic6
+
+# probability of connectivity
+pStarMat6 = distances(graphAprob6, weights=E(graphAprob6)$weight)
+pStarMat6 = exp(-pStarMat6)
+pcNum6 = outer(area6, area6)*pStarMat6
+pc6 = sum(pcNum6)/AL^2
+pc6
+```
+
+### Patch 7 Removed
+```{r}
+nodes7 = read.csv('https://github.com/rytomey/WILD7970_Spatial/raw/main/W12_Connectivity/kite7.csv')
+area7 = nodes7$area
+nodes7
+
+aObs7 = read.csv('https://github.com/rytomey/WILD7970_Spatial/raw/main/W12_Connectivity/kitemove7.csv')[,-1]
+diag(aObs7) = 0
+aObs7
+
+coords7 = cbind(nodes7$XCoord, nodes7$YCoord)
+distMat7 = pointDistance(coords7, lonlat=F)
+distMat7 = distMat7 / 1000 # in km
+distMat7
+
+linkLoc7 = which(aObs7 > 0, arr.ind=T)
+withinDisp7 = cbind(distMat7[linkLoc7], aObs7[linkLoc7])
+withinDisp7 = rep(withinDisp7[,1], withinDisp7[,2])
+
+dispExp7 = fitdist(data = withinDisp7, distr='exp', method='mle')
+plot(dispExp7)
+aObs7
+
+aMeanDist7 = mean(withinDisp7)
+aMeanDist7
+
+aMean7 = matrix(0, nrow=nrow(aObs7), ncol=ncol(aObs7))
+aMean7[distMat7 < aMeanDist7] = 1
+diag(aMean7) = 0
+aMean7
+
+aProb7 = matrix(0, nrow=nrow(aObs7), ncol=ncol(aObs7))
+alpha7 = 1/aMeanDist7
+
+aProb7 = exp(-alpha*distMat7)
+diag(aProb7)=0
+aProb7
+
+graphAmean7 = graph_from_adjacency_matrix(aMean7, mode='undirected')
+graphAprob7 = graph_from_adjacency_matrix(aProb7, mode='undirected', weighted=T)
+graphAobs7 = graph_from_adjacency_matrix(as.matrix(aObs7), mode='directed', weighted=T)
+
+#landscape
+connectance7 = edge_density(graphAmean7)
+connectance7
+
+#integral index of connectivity
+AL = 63990 
+nlMat7 = distances(graphAmean7)
+nlMat7 [is.infinite(nlMat7)] = 1000
+iicMat7 = outer(area7, area7)/(1+nlMat7)
+iic7 = sum(iicMat7)/AL^2
+iic7
+
+# probability of connectivity
+pStarMat7 = distances(graphAprob7, weights=E(graphAprob7)$weight)
+pStarMat7 = exp(-pStarMat7)
+pcNum7 = outer(area7, area7)*pStarMat7
+pc7 = sum(pcNum7)/AL^2
+pc7
+
+#plots
+plot(graphAmean, layout=coords, vertex.label=NA)
+plot(graphAprob, layout=coords, edge.width=E(graphAprob)$weight, vertex.label=NA)
+
+plot(graphAmean6, layout=coords, vertex.label=NA)
+plot(graphAprob6, layout=coords, edge.width=E(graphAprob)$weight, vertex.label=NA)
+
+plot(graphAmean7, layout=coords, vertex.label=NA)
+plot(graphAprob7, layout=coords, edge.width=E(graphAprob)$weight, vertex.label=NA)
+
+#results
+connectance6
+iic6
+pc6
+
+connectance7
+iic7
+pc7
+```
+Compared to the removal of patch 7, removal of patch 6 had a greater reduction of landscape connectivity in terms of the probability of connectivity as well as the integral index of connectivity. The removal of patch 7 had a greater reduction of landscape connectivity in terms of connectance which is a simple measure for unweighted graphs and may be less reliable of a metric.
