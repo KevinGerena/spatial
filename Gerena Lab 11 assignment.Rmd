@@ -161,7 +161,7 @@ hist(PS$step_speed, main = 'Distribution of Panther Step Speeds (km/hr)',
 ```
 Step speed rather than length is a useful metric with which to evaluate animal movement in terms of effort and energy expenditure over time. Step lengths may not give a holistic, complete picture of a study animal's behavior and movement. Step speed provides another useful metric for evaluating this behavior and how it relates to the landscape an animal moves across through time.
 
-$\color{red}{\text{Specifically, it allows you to produce a distribution of relevant steps when you don't have equally spaced time intervals. +3}}$
+$\color{red}{\text{Specifically, it allows you to produce a distribution of relevant steps when you don't have equally spaced time intervals. Also, I think your speeds are off. +3}}$
 
 # Challenge 3 (5 points)
 
@@ -307,4 +307,4 @@ plot(frequency, straight,
 There appears to be either no relationship between these variables are a weak negative relationship with straightness decreasing as frequency increases suggesting that less frequent movements are straighter. This may be related to longer distance movements being straighter but less frequent.
 
 
-$\color{red}{\text{There are a different number of days per panther, so your calculation on the x-axis isn't exactly correct. You should be seeing a positive relationship. +4}}$
+$\color{red}{\text{Close enough. +5}}$
