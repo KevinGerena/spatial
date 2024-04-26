@@ -106,10 +106,13 @@ tmp = data.frame('category' = names(selRatioII$wi),
                  'wi' = selRatioII$wi,
                  'ucl' = selRatioII$ICwiupper,
                  'lcl' = selRatioII$ICwilower) %>% 
-  arrange(desc(wi)) %>% 
+  arrange(desc(wi)) 
 tmp #wi values
 ```
 When compared to exponentiated coefficient values, the WI values of each landcover type were generally greater. While both exhibit similar broad-scale trends among landcover types, WI values are related to probability of use while the exponentiated coefficients are a metric that is evaluated in comparison to a reference cover type. When evaluating just the probability of use of a given landcover type, WI values may be more appropriate.
+
+$\color{red}{\text{This isn't exactly correct. The exponentiated beta coefficients represent the odds ratios for the various cover types (i.e., the odds a point in that category is used divided by the odds is is not used). This is the same way that wi is calculated. The only difference here is that we're now including a random effect to account for non-independence among points selected by the same panther. +4}}$
+
 
 # Challenge 2 (5 points)
 
@@ -157,6 +160,8 @@ hist(PS$step_speed, main = 'Distribution of Panther Step Speeds (km/hr)',
 
 ```
 Step speed rather than length is a useful metric with which to evaluate animal movement in terms of effort and energy expenditure over time. Step lengths may not give a holistic, complete picture of a study animal's behavior and movement. Step speed provides another useful metric for evaluating this behavior and how it relates to the landscape an animal moves across through time.
+
+$\color{red}{\text{Specifically, it allows you to produce a distribution of relevant steps when you don't have equally spaced time intervals. +3}}$
 
 # Challenge 3 (5 points)
 
@@ -240,6 +245,9 @@ Sp5
 Sp6
 ```
 Panther 6 (147) took the least tortuous path while Panther 1 (100) took the most tortuous path.
+
+$\color{red}{\text{Great. +5}}$
+
 # Challenge 4 (5 points)
 
 For each panther, calculate the frequency with which locations were recorded as points per day. Plot path straightness as a function of frequency (there should be 6 points on this figure, one per panther). What relationship do you notice between these two variables, and why might that pattern be occurring?
@@ -298,3 +306,5 @@ plot(frequency, straight,
 ```
 There appears to be either no relationship between these variables are a weak negative relationship with straightness decreasing as frequency increases suggesting that less frequent movements are straighter. This may be related to longer distance movements being straighter but less frequent.
 
+
+$\color{red}{\text{There are a different number of days per panther, so your calculation on the x-axis isn't exactly correct. You should be seeing a positive relationship. +4}}$
