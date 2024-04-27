@@ -83,6 +83,8 @@ chart.Correlation(Dist, histogram=T)
 
 The randomized shortest distances are the longest, and the Euclidean distances are the shortest. This is expected because the Euclidean distance is a straight-line distance that does not include factors like fragmentation which may lead to underestimating the distance between locations in circumstances where factors such as that may be significant.
 
+$\color{red}{\text{Good. +5}}$
+
 # Challenge 2 (5 points)
 
 In the lab we developed a 10% least-cost corridor between two protected areas. Identify what proportion of this corridor is comprised of each landcover type based on the land raster. To do this, make sure that both the land and leastCostCorridor10 rasters are spatRasters. Then mask land with leastCostCorridor10. The values in the resulting raster will be representative of the landcover values in the corridor. Summarise this information and refer back to the classification dataframe to link the landcover numbers with landcover types. What are the three most common landcover types within this corridor, and does this make sense given what you know about the resistance to movement within such landcover types?
@@ -138,6 +140,8 @@ classification
 
 The three most common cover types are cypress swamp (22), cropland (14.3), and fresh water marsh (13.7). Cypress swamp is related to resource selection and cropland and fresh water marsh can also provide additional resources or terrain that facilitates travel.
 
+$\color{red}{\text{I'm not exactly sure what went wrong here, but hardwood swamp should be in the top 3, not cropland.  Either way, good work. +4}}$
+
 
 # Challenge 3 (5 points)
 
@@ -158,6 +162,8 @@ plot(passageMapT1)
 plot(passageMapT2)
 ```
 As theta increases, the movement path becomes clearer and more readily applied to conservation. However, this comes at the cost of biological realism with lower theta values likely better reflecting reality or our lack of knowledge regarding contributing factors.
+
+$\color{red}{\text{Good. +5}}$
 
 
 # Challenge 4 (5 points)
@@ -361,3 +367,5 @@ iic7
 pc7
 ```
 Compared to the removal of patch 7, removal of patch 6 had a greater reduction of landscape connectivity in terms of the probability of connectivity as well as the integral index of connectivity. The removal of patch 7 had a greater reduction of landscape connectivity in terms of connectance which is a simple measure for unweighted graphs and may be less reliable of a metric.
+
+$\color{red}{\text{Good. +5}}$
