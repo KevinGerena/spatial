@@ -1,0 +1,93 @@
+---
+title: "Drone Class Project"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+library(spatstat)
+deer=read.csv(file.choose())
+feeder=read.csv(file.choose())
+
+window=owin(xrange=c(626000, 628000),yrange=c(3632100, 3633900))
+pppDeer = ppp(x=deer$X, y=deer$Y, window=window)
+pppFeed = ppp(x=feeder$X, y=feeder$Y, window=window)
+
+plot(pppDeer)
+plot(pppFeed)
+plot(density(pppDeer, 1))
+summary(pppDeer)
+
+pTrans = pcf(pppDeer, correction='translate') #point correlation g
+plot(pTrans)
+pEnv = envelope(pppDeer, pcf, nsim=99, rank=1, correction='translate', global=F)
+plot(pEnv, shade=c('hi', 'lo'), legend=F)
+
+g = Gest(pppDeer, correction='rs') #nearest neighbor g
+plot(g, legend=F)
+gEnv = envelope(pppDeer, Gest, nsim=99, rank=1, correction='rs', global=F)
+plot(gEnv, shade=c('hi', 'lo'), legend=F)
+
+df=data.frame(x=pppDeer$x,y=pppDeer$y)
+df
+d=dist(df)
+hc=hclust(d) #dendro
+plot(hc)
+
+km=kmeans(df, 15) #kmean
+plot(df, col=km$cluster, main="Distribution of Deer and Feeders (K-Means)")
+points(km$centers, col=1:15, pch=8, cex=2)
+points(pppFeed, col=9, pch=0)
+
+#continuous mark
+pppdist = ppp(x=deer$X, y=deer$Y, window=window, marks=deer$NEAR_DIST)
+
+mcfdist = markcorr(pppdist)
+
+mcfEnv = envelope(pppdist, markcorr, nsim=99, correction = 'iso', global=F)
+
+plot(mcfEnv, shade=c('hi', 'lo'), legend=F)
+
+
+hist(deer$NEAR_DIST, main="Histogram of Distance to Feeder", xlab="Distance to Nearest Feeder (m)")
+hist(deer$DEER_DIST, main="Histogram of Distance to Deer", xlab="Distance to Nearest Deer (m)")
+mean(deer$NEAR_DIST) #247.8833
+mean(deer$DEER_DIST) #9.019619
+
+#imhomogoneous
+library(MuMIn)
+distmat=matrix(data=deer$NEAR_DIST)
+distim=im(mat=distmat, xrange=c(626000, 628000),yrange=c(3632100, 3633900))
+ppdist=ppm(pppDeer, ~dist, covariates=list(dist=distim))
+plot(ppdist)
+summary(ppdist)
+summary(pppDeer)
+
+ppint=ppm(pppDeer, ~1)
+ppxy=ppm(pppDeer, ~ x + y)
+ppxy2=ppm(pppDeer, ~polynom (x, y, 2))
+data.frame(model = c('int', 'xy', 'xy2', 'distance'),
+           AIC = c(AIC(ppint), AIC(ppxy), AIC(ppxy2), AIC(ppdist)))
+
+plot(predict(ppxy2, type='trend'))
+plot(pppDeer, add=T)
+
+pdist=ppm(pppDeer, ~dist, covariates=(dist=deer$NEAR_DIST))
+
+deerlm=lm(DEER_DIST~NEAR_DIST, data=deer)
+plot(deerlm)
+summary(deerlm) #p=0.92
+var(deer$NEAR_DIST) #14240
+var(deer$DEER_DIST) #155
+
+
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
